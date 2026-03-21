@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.venv/
+venv/
+ENV/
+
+# Logs
+logs/
+*.log
+
+# Project specific
+backend/history/history.json
+backend/__pycache__/
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak
+venv.bak
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Static Analysis
+.pyre/
+.mypy_cache/
+.pytest_cache/

@@ -1,0 +1,13 @@
+{
+  "source_directories": [
+    {
+      "import_root": "backend"
+    }
+  ],
+  "search_path": [
+    "backend"
+  ],
+  "exclude_search_path_initializers": true,
+  "ignore_all_errors": false,
+  "strict_handling_unsupported_ignores": false
+}
