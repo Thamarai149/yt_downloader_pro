@@ -1,0 +1,21 @@
+{
+  "name": "YT Pro Downloader",
+  "short_name": "YT Pro",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#030308",
+  "theme_color": "#6366f1",
+  "description": "Ultra-fast, privacy-first YouTube Downloader with premium UI.",
+  "icons": [
+    {
+      "src": "favicon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "favicon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
