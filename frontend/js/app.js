@@ -233,6 +233,7 @@ function renderVideoInfo(info) {
     });
   }
 
+  applyPrefsToSelection();
   sel.addEventListener('change', updateFormatInfo);
   updateFormatInfo();
 
@@ -243,7 +244,13 @@ function renderVideoInfo(info) {
   });
 
   show($('videoInfoCard'));
+  
+  const prefs = JSON.parse(localStorage.getItem('ytpro-settings') || '{}');
+  if (prefs.autoDownload) {
+    setTimeout(() => startDownload(), 300);
+  }
 }
+
 
 function updateFormatInfo() {
   if (!currentInfo || currentInfo.type !== 'video') return;
@@ -525,14 +532,91 @@ function renderHistory(items) {
       <i class="fas fa-check-circle hist-icon"></i>
       <span class="hist-title" title="${escHtml(item.title)}">${escHtml(item.title)}</span>
       <span class="hist-date">${formatRelTime(item.timestamp)}</span>
+      <div class="hist-actions">
+        <button class="btn btn-ghost btn-sm" title="Re-download" onclick="reDownload('${escAttr(item.url)}')">
+          <i class="fas fa-redo"></i>
+        </button>
+      </div>
     </div>
   `).join('');
+}
+
+function reDownload(url) {
+  $('urlInput').value = url;
+  switchSection('downloader');
+  fetchVideo();
 }
 
 async function clearHistory() {
   await fetch(`${API}/api/history`, { method: 'DELETE' });
   renderHistory([]);
   toast('History cleared', 'info');
+}
+
+// ═══════════════════════════════════════════════════════════
+// Settings
+// ═══════════════════════════════════════════════════════════
+function loadSettings() {
+  const prefs = JSON.parse(localStorage.getItem('ytpro-settings') || '{}');
+  if (prefs.resolution) $('prefResolution').value = prefs.resolution;
+  if (prefs.audioFormat) $('prefAudioFormat').value = prefs.audioFormat;
+  if (prefs.autoDownload !== undefined) $('prefAutoDownload').checked = prefs.autoDownload;
+  if (prefs.useCookies !== undefined) $('prefUseCookies').checked = prefs.useCookies;
+  
+  if (prefs.useCookies !== undefined && $('cookieCheck')) {
+    $('cookieCheck').checked = prefs.useCookies;
+  }
+}
+
+function saveSettings() {
+  const prefs = {
+    resolution: $('prefResolution').value,
+    audioFormat: $('prefAudioFormat').value,
+    autoDownload: $('prefAutoDownload').checked,
+    useCookies: $('prefUseCookies').checked
+  };
+  localStorage.setItem('ytpro-settings', JSON.stringify(prefs));
+  if ($('cookieCheck')) $('cookieCheck').checked = prefs.useCookies;
+  toast('Settings saved successfully!', 'success');
+}
+
+// ═══════════════════════════════════════════════════════════
+// Settings Auto-apply in fetchVideo
+// ═══════════════════════════════════════════════════════════
+function applyPrefsToSelection() {
+  const prefs = JSON.parse(localStorage.getItem('ytpro-settings') || '{}');
+  if (prefs.resolution) {
+    const sel = $('formatSelect');
+    if (sel) {
+      for (let i = 0; i < sel.options.length; i++) {
+        if (sel.options[i].value.includes(prefs.resolution)) {
+          sel.selectedIndex = i;
+          break;
+        }
+      }
+    }
+  }
+  if (prefs.audioFormat && $('audioFormatSelect')) {
+    $('audioFormatSelect').value = prefs.audioFormat;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// FAB
+// ═══════════════════════════════════════════════════════════
+async function quickPaste() {
+  try {
+    const text = await navigator.clipboard.readText();
+    if (text && isYouTubeUrl(text)) {
+      $('urlInput').value = text.trim();
+      if (currentSection !== 'downloader') switchSection('downloader');
+      fetchVideo();
+    } else {
+      toast('No valid YouTube URL found in clipboard', 'error');
+    }
+  } catch (err) {
+    toast('Clipboard access denied. Please paste manually.', 'error');
+  }
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -563,13 +647,32 @@ function formatRelTime(iso) {
 }
 
 // ═══════════════════════════════════════════════════════════
+// Keyboard Shortcuts
+// ═══════════════════════════════════════════════════════════
+function initShortcuts() {
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && document.activeElement === $('urlInput')) {
+      fetchVideo();
+    }
+    if (e.key === 'Escape') {
+      if ($('urlInput').value) $('urlInput').value = '';
+      resetInfoCards();
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
 // Init
 // ═══════════════════════════════════════════════════════════
 (function init() {
   initTheme();
+  loadSettings();
   initNavigation();
   initDragDrop();
+  initShortcuts();
   loadHistory();
+  
+  if ($('quickPasteBtn')) $('quickPasteBtn').classList.remove('hidden');
 
   // Refresh queue status on load (reconnect active downloads if any)
   fetch(`${API}/api/queue`).then(r => r.json()).then(items => {
