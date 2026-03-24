@@ -252,7 +252,10 @@ def _run_download(url, download_id, options, progress_callback, cancel_check, at
     trim_end = options.get('trim_end', '').strip()
     cookies_browser = options.get('cookies_browser', '').strip()
 
-    out_tmpl = os.path.join(DOWNLOADS_DIR, '%(title)s.%(ext)s')
+    subfolder = 'Audio' if audio_only else 'Video'
+    out_dir = os.path.join(DOWNLOADS_DIR, subfolder)
+    os.makedirs(out_dir, exist_ok=True)
+    out_tmpl = os.path.join(out_dir, '%(title)s.%(ext)s')
     
     # Build postprocessors
     postprocessors = []
