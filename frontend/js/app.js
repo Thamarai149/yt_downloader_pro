@@ -66,12 +66,14 @@ function switchSection(sectionId) {
   
   // Update page sections
   document.querySelectorAll('.page-section').forEach(sec => {
-    sec.classList.toggle('active', sec.id === `section${sectionId.charAt(0).toUpperCase() + sectionId.slice(1)}`);
+    const isActive = sec.id === `section${sectionId.charAt(0).toUpperCase() + sectionId.slice(1)}`;
+    sec.classList.toggle('active', isActive);
+    if (isActive) sec.classList.remove('hidden');
   });
   
   // Update title
-  const titles = { downloader: 'Downloader', active: 'Active Queue', history: 'Download History' };
-  $('sectionTitle').textContent = titles[sectionId] || 'YT Downloader';
+  const titles = { downloader: 'Downloader', active: 'Active Queue', history: 'Download History', settings: 'Settings' };
+  $('sectionTitle').textContent = titles[sectionId] || 'YT Downloader Pro';
 
   if (sectionId === 'history') loadHistory();
 }
@@ -171,11 +173,10 @@ async function fetchVideo() {
   fetchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Fetching…';
 
   try {
-    const cookies = $('cookieCheck').checked ? 'chrome' : '';
     const res = await fetch(`${API}/api/info`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url, cookies_browser: cookies }),
+      body: JSON.stringify({ url }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Failed to fetch info');
@@ -561,22 +562,15 @@ function loadSettings() {
   if (prefs.resolution) $('prefResolution').value = prefs.resolution;
   if (prefs.audioFormat) $('prefAudioFormat').value = prefs.audioFormat;
   if (prefs.autoDownload !== undefined) $('prefAutoDownload').checked = prefs.autoDownload;
-  if (prefs.useCookies !== undefined) $('prefUseCookies').checked = prefs.useCookies;
-  
-  if (prefs.useCookies !== undefined && $('cookieCheck')) {
-    $('cookieCheck').checked = prefs.useCookies;
-  }
 }
 
 function saveSettings() {
   const prefs = {
     resolution: $('prefResolution').value,
     audioFormat: $('prefAudioFormat').value,
-    autoDownload: $('prefAutoDownload').checked,
-    useCookies: $('prefUseCookies').checked
+    autoDownload: $('prefAutoDownload').checked
   };
   localStorage.setItem('ytpro-settings', JSON.stringify(prefs));
-  if ($('cookieCheck')) $('cookieCheck').checked = prefs.useCookies;
   toast('Settings saved successfully!', 'success');
 }
 
@@ -662,6 +656,39 @@ function initShortcuts() {
 }
 
 // ═══════════════════════════════════════════════════════════
+// Mobile Switch Gestures
+// ═══════════════════════════════════════════════════════════
+function initGestures() {
+  let touchStartX = 0;
+  let touchEndX = 0;
+  const sections = ['downloader', 'active', 'history', 'settings'];
+
+  document.addEventListener('touchstart', e => {
+    touchStartX = e.changedTouches[0].screenX;
+  }, { passive: true });
+
+  document.addEventListener('touchend', e => {
+    touchEndX = e.changedTouches[0].screenX;
+    handleSwipe();
+  }, { passive: true });
+
+  function handleSwipe() {
+    // Only swipe if the movement is significant (e.g., > 100px)
+    const threshold = 100;
+    if (touchEndX < touchStartX - threshold) {
+      // Swiped Left -> Go to "Next" section
+      const currIdx = sections.indexOf(currentSection);
+      if (currIdx < sections.length - 1) switchSection(sections[currIdx + 1]);
+    }
+    if (touchEndX > touchStartX + threshold) {
+      // Swiped Right -> Go to "Prev" section
+      const currIdx = sections.indexOf(currentSection);
+      if (currIdx > 0) switchSection(sections[currIdx - 1]);
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
 // Init
 // ═══════════════════════════════════════════════════════════
 (function init() {
@@ -670,6 +697,7 @@ function initShortcuts() {
   initNavigation();
   initDragDrop();
   initShortcuts();
+  initGestures();
   loadHistory();
   
   if ($('quickPasteBtn')) $('quickPasteBtn').classList.remove('hidden');

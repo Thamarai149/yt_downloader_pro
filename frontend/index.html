@@ -1,311 +1,310 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Professional YouTube Video & Audio Downloader — download in 4K, 1080p, MP3 and more." />
+  <meta name="description"
+    content="Professional YouTube Video & Audio Downloader — download in 4K, 1080p, MP3 and more." />
   <title>YT Downloader Pro</title>
 
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet" />
 
   <!-- Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 
   <!-- PWA Manifest -->
   <link rel="manifest" href="manifest.json" />
-  
+
   <link rel="stylesheet" href="css/style.css" />
   <link rel="icon" type="image/png" href="favicon.png" />
 </head>
+
 <body>
 
-<!-- ═══════════════════ ANIMATED BACKGROUND ═══════════════════ -->
-<div class="bg-orbs">
-  <div class="orb orb-1"></div>
-  <div class="orb orb-2"></div>
-  <div class="orb orb-3"></div>
-</div>
-
-<div class="app-layout">
-  <!-- ═══════════════════ SIDEBAR ═══════════════════ -->
-  <aside class="sidebar glass">
-    <div class="sidebar-logo">
-      <img src="favicon.png" alt="Logo" />
-      <span class="logo-text">YT Pro</span>
-    </div>
-    <nav class="sidebar-nav">
-      <button class="nav-item active" data-section="downloader">
-        <i class="fas fa-search"></i>
-        <span>Downloader</span>
-      </button>
-      <button class="nav-item" data-section="active">
-        <i class="fas fa-tasks"></i>
-        <span>Active</span>
-        <span class="nav-badge hidden" id="navActiveCount">0</span>
-      </button>
-      <button class="nav-item" data-section="history">
-        <i class="fas fa-history"></i>
-        <span>History</span>
-      </button>
-      <button class="nav-item" data-section="settings">
-        <i class="fas fa-cog"></i>
-        <span>Settings</span>
-      </button>
-    </nav>
-    <div class="sidebar-footer">
-      <button id="themeToggleBtn" class="btn btn-ghost icon-only" title="Toggle Theme">
-        <i class="fas fa-moon"></i>
-      </button>
-    </div>
-  </aside>
-
-  <!-- ═══════════════════ MAIN CONTENT ═══════════════════ -->
-  <div class="main-wrapper">
-    <header class="top-bar glass">
-      <div class="top-bar-inner container">
-        <h2 id="sectionTitle">Downloader</h2>
-        <div class="header-actions">
-          <button id="historyToggleBtn" class="btn btn-ghost btn-sm hidden">
-            <i class="fas fa-history"></i> History
-          </button>
-        </div>
-      </div>
-    </header>
-
-    <main class="content-area container">
-      <!-- ─── SECTION: DOWNLOADER ─── -->
-      <div id="sectionDownloader" class="page-section active">
-        <!-- URL INPUT CARD -->
-        <section class="card glass url-card" id="dropZone">
-          <div class="drop-hint"><i class="fas fa-link"></i> Drop YouTube URL here or paste below</div>
-          <div class="url-input-row">
-            <div class="input-wrapper">
-              <i class="fas fa-search input-icon"></i>
-              <input id="urlInput" type="url" placeholder="Paste YouTube URL or Playlist URL here…" autocomplete="off" spellcheck="false" />
-              <button id="clearUrlBtn" class="clear-btn" title="Clear"><i class="fas fa-times"></i></button>
-            </div>
-            <button id="fetchBtn" class="btn btn-primary" onclick="fetchVideo()">
-              <i class="fas fa-cloud-download-alt"></i>
-              <span>Fetch Video</span>
-            </button>
-          </div>
-          <div class="options-row">
-            <label class="switch-label">
-              <input type="checkbox" id="cookieCheck" />
-              <span class="switch"></span>
-              <span>Use Chrome Cookies (for restricted videos)</span>
-            </label>
-          </div>
-        </section>
-
-        <!-- LOADING SKELETON -->
-        <div id="loadingCard" class="card glass skeleton-card hidden">
-          <div class="sk-thumb"></div>
-          <div class="sk-lines">
-            <div class="sk-line sk-w80"></div>
-            <div class="sk-line sk-w50"></div>
-            <div class="sk-line sk-w30"></div>
-          </div>
-        </div>
-
-        <!-- VIDEO INFO CARD -->
-        <section id="videoInfoCard" class="card glass video-info-card hidden">
-          <div class="video-meta">
-            <div class="thumb-wrap">
-              <img id="videoThumb" src="" alt="Thumbnail" />
-              <span id="videoDuration" class="duration-badge"></span>
-            </div>
-            <div class="video-details">
-              <h2 id="videoTitle" class="video-title"></h2>
-              <div class="video-stats">
-                <span><i class="fas fa-user"></i> <span id="videoChannel"></span></span>
-                <span><i class="fas fa-eye"></i> <span id="videoViews"></span></span>
-                <span><i class="fas fa-calendar"></i> <span id="videoDate"></span></span>
-              </div>
-              <div class="format-tabs">
-                <button class="tab-btn active" id="tabVideo" onclick="switchTab('video')"><i class="fas fa-film"></i> Video</button>
-                <button class="tab-btn" id="tabAudio" onclick="switchTab('audio')"><i class="fas fa-music"></i> Audio</button>
-              </div>
-              <div id="videoTab" class="tab-pane active">
-                <div class="form-group">
-                  <label>Resolution</label>
-                  <div class="select-wrapper">
-                    <select id="formatSelect"></select>
-                    <i class="fas fa-chevron-down"></i>
-                  </div>
-                </div>
-                <div class="format-info" id="formatInfo"></div>
-              </div>
-              <div id="audioTab" class="tab-pane hidden">
-                <div class="form-group">
-                  <label>Audio Format</label>
-                  <div class="select-wrapper">
-                    <select id="audioFormatSelect">
-                      <option value="mp3">MP3 — Best compatibility</option>
-                      <option value="m4a">M4A — Apple/AAC</option>
-                      <option value="wav">WAV — Lossless</option>
-                      <option value="aac">AAC — Compact</option>
-                    </select>
-                    <i class="fas fa-chevron-down"></i>
-                  </div>
-                </div>
-              </div>
-              <details class="extra-opts" id="extraOptsSection">
-                <summary><i class="fas fa-sliders-h"></i> Advanced Options</summary>
-                <div class="extra-grid">
-                  <label class="switch-label">
-                    <input type="checkbox" id="subtitleCheck" />
-                    <span class="switch"></span>
-                    <span>Download Subtitles (SRT/VTT)</span>
-                  </label>
-                  <div id="subLangRow" class="form-group hidden">
-                    <label>Subtitle Language</label>
-                    <input type="text" id="subLangInput" placeholder="en" value="en" />
-                  </div>
-                  <div class="trim-row">
-                    <div class="form-group">
-                      <label><i class="fas fa-cut"></i> Trim Start</label>
-                      <input type="text" id="trimStart" placeholder="00:00:00" />
-                    </div>
-                    <div class="form-group">
-                      <label><i class="fas fa-cut"></i> Trim End</label>
-                      <input type="text" id="trimEnd" placeholder="00:00:00" />
-                    </div>
-                  </div>
-                </div>
-              </details>
-              <button id="downloadBtn" class="btn btn-download" onclick="startDownload()">
-                <i class="fas fa-download"></i>
-                <span>Download Now</span>
-              </button>
-            </div>
-          </div>
-        </section>
-
-        <!-- PLAYLIST CARD -->
-        <section id="playlistCard" class="card glass hidden">
-          <div class="section-header">
-            <h3><i class="fas fa-list"></i> Playlist — <span id="playlistTitle"></span></h3>
-            <span class="badge" id="playlistCount"></span>
-          </div>
-          <div class="playlist-opts">
-            <div class="form-group">
-              <label>Download Format for All</label>
-              <div class="select-wrapper">
-                <select id="playlistFormatSelect">
-                  <option value="">Best Quality</option>
-                  <option value="mp3_audio">MP3 Audio Only</option>
-                  <option value="m4a_audio">M4A Audio Only</option>
-                  <option value="720p">720p</option>
-                  <option value="1080p">1080p</option>
-                </select>
-                <i class="fas fa-chevron-down"></i>
-              </div>
-            </div>
-            <button class="btn btn-primary" onclick="downloadPlaylist()">
-              <i class="fas fa-layer-group"></i> Download All
-            </button>
-          </div>
-          <div id="playlistItems" class="playlist-grid"></div>
-        </section>
-      </div>
-
-      <!-- ─── SECTION: ACTIVE DOWNLOADS ─── -->
-      <div id="sectionActive" class="page-section hidden">
-        <section class="card glass no-margin" id="downloadsSection">
-          <div class="section-header">
-            <h3><i class="fas fa-tasks"></i> Active Queue</h3>
-            <span class="badge" id="activeCount">0</span>
-          </div>
-          <div id="downloadsList" class="downloads-list">
-            <div class="empty-state" id="downloadsEmpty">
-              <i class="fas fa-inbox"></i>
-              <p>No active downloads</p>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      <!-- ─── SECTION: HISTORY ─── -->
-      <div id="sectionHistory" class="page-section hidden">
-        <section class="card glass no-margin history-panel" id="historyPanel">
-          <div class="section-header">
-            <h3><i class="fas fa-history"></i> Download History</h3>
-            <button class="btn btn-ghost btn-sm" onclick="clearHistory()">
-              <i class="fas fa-trash"></i> Clear All
-            </button>
-          </div>
-          <div id="historyList" class="history-list">
-            <div class="empty-state"><i class="fas fa-clock"></i><p>No history yet</p></div>
-          </div>
-        </section>
-      </div>
-
-      <!-- ─── SECTION: SETTINGS ─── -->
-      <div id="sectionSettings" class="page-section hidden">
-        <section class="card glass no-margin">
-          <div class="section-header">
-            <h3><i class="fas fa-sliders-h"></i> Project Preferences</h3>
-          </div>
-          <div class="settings-grid">
-            <div class="form-group">
-              <label>Default Video Quality</label>
-              <div class="select-wrapper">
-                <select id="prefResolution">
-                  <option value="best">Best Available</option>
-                  <option value="1080">1080p</option>
-                  <option value="720">720p</option>
-                  <option value="480">480p</option>
-                </select>
-                <i class="fas fa-chevron-down"></i>
-              </div>
-            </div>
-            <div class="form-group">
-              <label>Default Audio Format</label>
-              <div class="select-wrapper">
-                <select id="prefAudioFormat">
-                  <option value="mp3">MP3</option>
-                  <option value="m4a">M4A</option>
-                  <option value="wav">WAV</option>
-                </select>
-                <i class="fas fa-chevron-down"></i>
-              </div>
-            </div>
-            <div class="settings-toggles">
-              <label class="switch-label">
-                <input type="checkbox" id="prefAutoDownload" />
-                <span class="switch"></span>
-                <span>Auto-start download after fetch</span>
-              </label>
-              <label class="switch-label">
-                <input type="checkbox" id="prefUseCookies" />
-                <span class="switch"></span>
-                <span>Always use Chrome cookies</span>
-              </label>
-            </div>
-          </div>
-          <div class="settings-footer">
-            <button class="btn btn-primary" onclick="saveSettings()"><i class="fas fa-save"></i> Save Settings</button>
-          </div>
-        </section>
-      </div>
-    </main>
+  <!-- ═══════════════════ ANIMATED BACKGROUND ═══════════════════ -->
+  <div class="bg-orbs">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
   </div>
 
-  <!-- FLOATING ACTION BUTTON -->
-  <button class="fab hidden" id="quickPasteBtn" onclick="quickPaste()" title="Quick Fetch from Clipboard">
-    <i class="fas fa-paste"></i>
-  </button>
-</div>
+  <div class="app-layout">
+    <!-- ═══════════════════ SIDEBAR ═══════════════════ -->
+    <aside class="sidebar glass">
+      <div class="sidebar-logo">
+        <img src="favicon.png" alt="Logo" />
+        <span class="logo-text">YT Downloader Pro</span>
+      </div>
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-section="downloader">
+          <i class="fas fa-search"></i>
+          <span>Downloader</span>
+        </button>
+        <button class="nav-item" data-section="active">
+          <i class="fas fa-tasks"></i>
+          <span>Active</span>
+          <span class="nav-badge hidden" id="navActiveCount">0</span>
+        </button>
+        <button class="nav-item" data-section="history">
+          <i class="fas fa-history"></i>
+          <span>History</span>
+        </button>
+        <button class="nav-item" data-section="settings">
+          <i class="fas fa-cog"></i>
+          <span>Settings</span>
+        </button>
+      </nav>
+      <div class="sidebar-footer">
+        <button id="themeToggleBtn" class="btn btn-ghost icon-only" title="Toggle Theme">
+          <i class="fas fa-moon"></i>
+        </button>
+      </div>
+    </aside>
 
-</main>
+    <!-- ═══════════════════ MAIN CONTENT ═══════════════════ -->
+    <div class="main-wrapper">
+      <header class="top-bar glass">
+        <div class="top-bar-inner container">
+          <h2 id="sectionTitle">Downloader</h2>
+          <div class="header-actions">
+            <button id="historyToggleBtn" class="btn btn-ghost btn-sm hidden">
+              <i class="fas fa-history"></i> History
+            </button>
+          </div>
+        </div>
+      </header>
 
-<!-- ─── TOAST CONTAINER ─── -->
-<div id="toastContainer" class="toast-container"></div>
+      <main class="content-area container">
+        <!-- ─── SECTION: DOWNLOADER ─── -->
+        <div id="sectionDownloader" class="page-section active">
+          <!-- URL INPUT CARD -->
+          <section class="card glass url-card" id="dropZone">
+            <div class="drop-hint"><i class="fas fa-link"></i> Drop YouTube URL here or paste below</div>
+            <div class="url-input-row">
+              <div class="input-wrapper">
+                <i class="fas fa-search input-icon"></i>
+                <input id="urlInput" type="url" placeholder="Paste YouTube URL or Playlist URL here…" autocomplete="off"
+                  spellcheck="false" />
+                <button id="clearUrlBtn" class="clear-btn" title="Clear"><i class="fas fa-times"></i></button>
+              </div>
+              <button id="fetchBtn" class="btn btn-primary" onclick="fetchVideo()">
+                <i class="fas fa-cloud-download-alt"></i>
+                <span>Fetch Video</span>
+              </button>
+            </div>
+          </section>
 
-<script src="js/app.js"></script>
+          <!-- LOADING SKELETON -->
+          <div id="loadingCard" class="card glass skeleton-card hidden">
+            <div class="sk-thumb"></div>
+            <div class="sk-lines">
+              <div class="sk-line sk-w80"></div>
+              <div class="sk-line sk-w50"></div>
+              <div class="sk-line sk-w30"></div>
+            </div>
+          </div>
+
+          <!-- VIDEO INFO CARD -->
+          <section id="videoInfoCard" class="card glass video-info-card hidden">
+            <div class="video-meta">
+              <div class="thumb-wrap">
+                <img id="videoThumb" src="" alt="Thumbnail" />
+                <span id="videoDuration" class="duration-badge"></span>
+              </div>
+              <div class="video-details">
+                <h2 id="videoTitle" class="video-title"></h2>
+                <div class="video-stats">
+                  <span><i class="fas fa-user"></i> <span id="videoChannel"></span></span>
+                  <span><i class="fas fa-eye"></i> <span id="videoViews"></span></span>
+                  <span><i class="fas fa-calendar"></i> <span id="videoDate"></span></span>
+                </div>
+                <div class="format-tabs">
+                  <button class="tab-btn active" id="tabVideo" onclick="switchTab('video')"><i class="fas fa-film"></i>
+                    Video</button>
+                  <button class="tab-btn" id="tabAudio" onclick="switchTab('audio')"><i class="fas fa-music"></i>
+                    Audio</button>
+                </div>
+                <div id="videoTab" class="tab-pane active">
+                  <div class="form-group">
+                    <label>Resolution</label>
+                    <div class="select-wrapper">
+                      <select id="formatSelect"></select>
+                      <i class="fas fa-chevron-down"></i>
+                    </div>
+                  </div>
+                  <div class="format-info" id="formatInfo"></div>
+                </div>
+                <div id="audioTab" class="tab-pane hidden">
+                  <div class="form-group">
+                    <label>Audio Format</label>
+                    <div class="select-wrapper">
+                      <select id="audioFormatSelect">
+                        <option value="mp3">MP3 — Best compatibility</option>
+                        <option value="m4a">M4A — Apple/AAC</option>
+                        <option value="wav">WAV — Lossless</option>
+                        <option value="aac">AAC — Compact</option>
+                      </select>
+                      <i class="fas fa-chevron-down"></i>
+                    </div>
+                  </div>
+                </div>
+                <details class="extra-opts" id="extraOptsSection">
+                  <summary><i class="fas fa-sliders-h"></i> Advanced Options</summary>
+                  <div class="extra-grid">
+                    <label class="switch-label">
+                      <input type="checkbox" id="subtitleCheck" />
+                      <span class="switch"></span>
+                      <span>Download Subtitles (SRT/VTT)</span>
+                    </label>
+                    <div id="subLangRow" class="form-group hidden">
+                      <label>Subtitle Language</label>
+                      <input type="text" id="subLangInput" placeholder="en" value="en" />
+                    </div>
+                    <div class="trim-row">
+                      <div class="form-group">
+                        <label><i class="fas fa-cut"></i> Trim Start</label>
+                        <input type="text" id="trimStart" placeholder="00:00:00" />
+                      </div>
+                      <div class="form-group">
+                        <label><i class="fas fa-cut"></i> Trim End</label>
+                        <input type="text" id="trimEnd" placeholder="00:00:00" />
+                      </div>
+                    </div>
+                  </div>
+                </details>
+                <button id="downloadBtn" class="btn btn-download" onclick="startDownload()">
+                  <i class="fas fa-download"></i>
+                  <span>Download Now</span>
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <!-- PLAYLIST CARD -->
+          <section id="playlistCard" class="card glass hidden">
+            <div class="section-header">
+              <h3><i class="fas fa-list"></i> Playlist — <span id="playlistTitle"></span></h3>
+              <span class="badge" id="playlistCount"></span>
+            </div>
+            <div class="playlist-opts">
+              <div class="form-group">
+                <label>Download Format for All</label>
+                <div class="select-wrapper">
+                  <select id="playlistFormatSelect">
+                    <option value="">Best Quality</option>
+                    <option value="mp3_audio">MP3 Audio Only</option>
+                    <option value="m4a_audio">M4A Audio Only</option>
+                    <option value="720p">720p</option>
+                    <option value="1080p">1080p</option>
+                  </select>
+                  <i class="fas fa-chevron-down"></i>
+                </div>
+              </div>
+              <button class="btn btn-primary" onclick="downloadPlaylist()">
+                <i class="fas fa-layer-group"></i> Download All
+              </button>
+            </div>
+            <div id="playlistItems" class="playlist-grid"></div>
+          </section>
+        </div>
+
+        <!-- ─── SECTION: ACTIVE DOWNLOADS ─── -->
+        <div id="sectionActive" class="page-section">
+          <section class="card glass no-margin" id="downloadsSection">
+            <div class="section-header">
+              <h3><i class="fas fa-tasks"></i> Active Queue</h3>
+              <span class="badge" id="activeCount">0</span>
+            </div>
+            <div id="downloadsList" class="downloads-list">
+              <div class="empty-state" id="downloadsEmpty">
+                <i class="fas fa-inbox"></i>
+                <p>No active downloads</p>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- ─── SECTION: HISTORY ─── -->
+        <div id="sectionHistory" class="page-section">
+          <section class="card glass no-margin history-panel" id="historyPanel">
+            <div class="section-header">
+              <h3><i class="fas fa-history"></i> Download History</h3>
+              <button class="btn btn-ghost btn-sm" onclick="clearHistory()">
+                <i class="fas fa-trash"></i> Clear All
+              </button>
+            </div>
+            <div id="historyList" class="history-list">
+              <div class="empty-state"><i class="fas fa-clock"></i>
+                <p>No history yet</p>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- ─── SECTION: SETTINGS ─── -->
+        <div id="sectionSettings" class="page-section">
+          <section class="card glass no-margin">
+            <div class="section-header">
+              <h3><i class="fas fa-sliders-h"></i> Project Preferences</h3>
+            </div>
+            <div class="settings-grid">
+              <div class="form-group">
+                <label>Default Video Quality</label>
+                <div class="select-wrapper">
+                  <select id="prefResolution">
+                    <option value="best">Best Available</option>
+                    <option value="1080">1080p</option>
+                    <option value="720">720p</option>
+                    <option value="480">480p</option>
+                  </select>
+                  <i class="fas fa-chevron-down"></i>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Default Audio Format</label>
+                <div class="select-wrapper">
+                  <select id="prefAudioFormat">
+                    <option value="mp3">MP3</option>
+                    <option value="m4a">M4A</option>
+                    <option value="wav">WAV</option>
+                  </select>
+                  <i class="fas fa-chevron-down"></i>
+                </div>
+              </div>
+              <div class="settings-toggles">
+                <label class="switch-label">
+                  <input type="checkbox" id="prefAutoDownload" />
+                  <span class="switch"></span>
+                  <span>Auto-start download after fetch</span>
+                </label>
+              </div>
+            </div>
+            <div class="settings-footer">
+              <button class="btn btn-primary" onclick="saveSettings()"><i class="fas fa-save"></i> Save
+                Settings</button>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <!-- FLOATING ACTION BUTTON -->
+    <button class="fab hidden" id="quickPasteBtn" onclick="quickPaste()" title="Quick Fetch from Clipboard">
+      <i class="fas fa-paste"></i>
+    </button>
+  </div>
+
+  </main>
+
+  <!-- ─── TOAST CONTAINER ─── -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="js/app.js"></script>
 </body>
+
 </html>
