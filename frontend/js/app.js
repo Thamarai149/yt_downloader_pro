@@ -12,7 +12,7 @@ const API = '';          // Same origin — Flask serves frontend
 let currentInfo = null;  // Last fetched video/playlist info
 let activeTab = 'video'; // 'video' | 'audio'
 let activeDownloads = {}; // download_id -> { eventSource, el }
-let historyVisible = false;
+let currentSection = 'downloader';
 
 // ═══════════════════════════════════════════════════════════
 // DOM Helpers
@@ -44,26 +44,64 @@ function toast(msg, type = 'info', duration = 4000) {
 }
 
 // ═══════════════════════════════════════════════════════════
+// Navigation
+// ═══════════════════════════════════════════════════════════
+function initNavigation() {
+  const navItems = document.querySelectorAll('.nav-item');
+  navItems.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const section = btn.getAttribute('data-section');
+      switchSection(section);
+    });
+  });
+}
+
+function switchSection(sectionId) {
+  currentSection = sectionId;
+  
+  // Update nav UI
+  document.querySelectorAll('.nav-item').forEach(btn => {
+    btn.classList.toggle('active', btn.getAttribute('data-section') === sectionId);
+  });
+  
+  // Update page sections
+  document.querySelectorAll('.page-section').forEach(sec => {
+    sec.classList.toggle('active', sec.id === `section${sectionId.charAt(0).toUpperCase() + sectionId.slice(1)}`);
+  });
+  
+  // Update title
+  const titles = { downloader: 'Downloader', active: 'Active Queue', history: 'Download History' };
+  $('sectionTitle').textContent = titles[sectionId] || 'YT Downloader';
+
+  if (sectionId === 'history') loadHistory();
+}
+
+// ═══════════════════════════════════════════════════════════
 // Theme Toggle
 // ═══════════════════════════════════════════════════════════
 function initTheme() {
   const saved = localStorage.getItem('ytdl-theme') || 'dark';
   document.documentElement.setAttribute('data-theme', saved);
   updateThemeIcon(saved);
+  
+  const btn = $('themeToggleBtn');
+  if (btn) {
+    btn.addEventListener('click', () => {
+      const cur = document.documentElement.getAttribute('data-theme');
+      const next = cur === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('ytdl-theme', next);
+      updateThemeIcon(next);
+    });
+  }
 }
+
 function updateThemeIcon(theme) {
   const btn = $('themeToggleBtn');
   if (btn) btn.innerHTML = theme === 'dark'
     ? '<i class="fas fa-sun"></i>'
     : '<i class="fas fa-moon"></i>';
 }
-$('themeToggleBtn').addEventListener('click', () => {
-  const cur = document.documentElement.getAttribute('data-theme');
-  const next = cur === 'dark' ? 'light' : 'dark';
-  document.documentElement.setAttribute('data-theme', next);
-  localStorage.setItem('ytdl-theme', next);
-  updateThemeIcon(next);
-});
 
 // ═══════════════════════════════════════════════════════════
 // Drag & Drop URL
@@ -412,6 +450,12 @@ function updateActiveCount() {
   const count = Object.keys(activeDownloads).length;
   const badge = $('activeCount');
   if (badge) badge.textContent = count;
+  
+  const navBadge = $('navActiveCount');
+  if (navBadge) {
+    navBadge.textContent = count;
+    count > 0 ? show(navBadge) : hide(navBadge);
+  }
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -462,12 +506,6 @@ async function downloadPlaylist() {
 // ═══════════════════════════════════════════════════════════
 // History
 // ═══════════════════════════════════════════════════════════
-$('historyToggleBtn').addEventListener('click', () => {
-  historyVisible = !historyVisible;
-  historyVisible ? show($('historyPanel')) : hide($('historyPanel'));
-  if (historyVisible) loadHistory();
-});
-
 async function loadHistory() {
   try {
     const res = await fetch(`${API}/api/history`);
@@ -529,6 +567,7 @@ function formatRelTime(iso) {
 // ═══════════════════════════════════════════════════════════
 (function init() {
   initTheme();
+  initNavigation();
   initDragDrop();
   loadHistory();
 
