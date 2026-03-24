@@ -689,6 +689,44 @@ function initGestures() {
 }
 
 // ═══════════════════════════════════════════════════════════
+// Resizable Sidebar
+// ═══════════════════════════════════════════════════════════
+function initResizer() {
+  const sidebar = document.querySelector('.sidebar');
+  const resizer = document.getElementById('sidebarResizer');
+  if (!sidebar || !resizer) return;
+
+  let isResizing = false;
+
+  resizer.addEventListener('mousedown', (e) => {
+    isResizing = true;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none'; // Prevent text selection
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!isResizing) return;
+    // Limit min/max width
+    const newWidth = Math.max(200, Math.min(600, e.clientX));
+    sidebar.style.width = newWidth + 'px';
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (isResizing) {
+      isResizing = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      // Save user preference
+      localStorage.setItem('ytpro-sidebar-width', sidebar.style.width);
+    }
+  });
+
+  // Restore saved width
+  const savedWidth = localStorage.getItem('ytpro-sidebar-width');
+  if (savedWidth) sidebar.style.width = savedWidth;
+}
+
+// ═══════════════════════════════════════════════════════════
 // Init
 // ═══════════════════════════════════════════════════════════
 (function init() {
@@ -698,6 +736,7 @@ function initGestures() {
   initDragDrop();
   initShortcuts();
   initGestures();
+  initResizer();
   loadHistory();
   
   if ($('quickPasteBtn')) $('quickPasteBtn').classList.remove('hidden');

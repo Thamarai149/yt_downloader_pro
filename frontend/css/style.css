@@ -192,6 +192,15 @@ body {
   z-index: 10;
 }
 
+/* ─── Resizer ─── */
+.resizer {
+  width: 6px;
+  background: transparent;
+  cursor: col-resize;
+  position: relative;
+  z-index: 101;
+}
+
 /* ─── Top Bar ─── */
 .top-bar {
   height: 80px;
