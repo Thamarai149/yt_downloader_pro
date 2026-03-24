@@ -338,7 +338,7 @@ function createDownloadItem(id, title, url) {
     </div>
     <div class="dl-meta">
       <div class="dl-stats">
-        <span><i class="fas fa-percentage"></i> <span class="dl-pct">0%</span></span>
+        <span><i class="fas fa-chart-line"></i> <span class="dl-pct">0%</span></span>
         <span><i class="fas fa-bolt"></i> <span class="dl-speed">—</span></span>
         <span><i class="fas fa-clock"></i> <span class="dl-eta">—</span></span>
       </div>
@@ -371,10 +371,11 @@ function updateDownloadItem(id, data) {
   el.querySelector('.dl-status-badge').textContent = badgeText[status] || status;
 
   // Progress bar
+  const displayPct = typeof pct === 'number' ? pct.toFixed(1) : pct;
   el.querySelector('.progress-bar-fill').style.width = `${pct}%`;
-  el.querySelector('.dl-pct').textContent = `${pct}%`;
-  el.querySelector('.dl-speed').textContent = data.speed || '—';
-  el.querySelector('.dl-eta').textContent = data.eta || '—';
+  el.querySelector('.dl-pct').textContent = `${displayPct}%`;
+  el.querySelector('.dl-speed').textContent = stripAnsi(data.speed || '—');
+  el.querySelector('.dl-eta').textContent = stripAnsi(data.eta || '—');
 
   // Error message
   const errEl = el.querySelector('.dl-error-msg');
@@ -499,6 +500,11 @@ async function clearHistory() {
 // ═══════════════════════════════════════════════════════════
 // Utility
 // ═══════════════════════════════════════════════════════════
+function stripAnsi(s) {
+  if (typeof s !== 'string') return s;
+  return s.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '').trim();
+}
+
 function escHtml(s) {
   return String(s || '').replace(/[&<>"']/g, c => ({
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'

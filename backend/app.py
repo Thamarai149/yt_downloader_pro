@@ -6,12 +6,12 @@ import json
 import logging
 import os
 import time
-from flask import Flask, Response, jsonify, request, send_from_directory  # type: ignore[import]
-from flask_cors import CORS  # type: ignore[import]
+from flask import Flask, Response, jsonify, request, send_from_directory  
+from flask_cors import CORS  
 
-import downloader  # type: ignore[import]
-import history  # type: ignore[import]
-import queue_manager  # type: ignore[import]
+import downloader  
+import history  
+import queue_manager  
 
 # ---------------------------------------------------------------------------
 # App setup

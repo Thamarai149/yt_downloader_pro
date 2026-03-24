@@ -18,6 +18,15 @@ os.makedirs(DOWNLOADS_DIR, exist_ok=True)
 # Helpers
 # ---------------------------------------------------------------------------
 
+def _strip_ansi(s):
+    if not s:
+        return ''
+    # Strip ANSI escape sequences and other weird characters
+    s = re.sub(r'\x1b\[[0-9;]*[a-zA-Z]', '', s)
+    # Also strip some common yt-dlp weirdness like the progress bar blocks if they leak in
+    s = re.sub(r'[\u2580-\u259F]+', '', s)
+    return s.strip()
+
 def _format_bytes(b):
     if b is None:
         return 'N/A'
@@ -288,18 +297,33 @@ def _run_download(url, download_id, options, progress_callback, cancel_check, at
             raise yt_dlp.utils.DownloadError('Cancelled by user')
         status = d.get('status', '')
         if status == 'downloading':
-            raw_percent = d.get('_percent_str', '0%').strip()
-            pct = float(re.sub(r'[^0-9.]', '', raw_percent) or 0)
-            speed_raw = d.get('_speed_str', '').strip()
-            eta_raw = d.get('_eta_str', '').strip()
+            # Try to calculate percentage from bytes first (more reliable)
+            total = d.get('total_bytes') or d.get('total_bytes_estimate')
+            downloaded = d.get('downloaded_bytes', 0)
+            if total and total > 0:
+                pct = (downloaded / total) * 100
+            else:
+                # Fallback to string parsing if bytes missing
+                raw_percent = d.get('_percent_str', '0%').strip()
+                # Handle both dot and comma decimals (e.g. 94.9% vs 94,9%)
+                pct_clean = re.sub(r'[^0-9.,]', '', raw_percent)
+                pct_clean = pct_clean.replace(',', '.')
+                try:
+                    pct = float(pct_clean)
+                except:
+                    pct = 0
+
+            speed = _strip_ansi(d.get('_speed_str', ''))
+            eta = _strip_ansi(d.get('_eta_str', ''))
+
             progress_callback({
                 'status': 'downloading',
-                'percent': int(pct * 10) / 10,
-                'speed': speed_raw,
-                'eta': eta_raw,
+                'percent': round(pct, 1),
+                'speed': speed or '—',
+                'eta': eta or '—',
                 'filename': d.get('filename', ''),
-                'downloaded_bytes': d.get('downloaded_bytes', 0),
-                'total_bytes': d.get('total_bytes') or d.get('total_bytes_estimate', 0),
+                'downloaded_bytes': downloaded,
+                'total_bytes': total or 0,
             })
         elif status == 'finished':
             progress_callback({
