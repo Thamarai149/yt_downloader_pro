@@ -28,19 +28,34 @@ const fmt = {
 // ═══════════════════════════════════════════════════════════
 // Toast Notifications
 // ═══════════════════════════════════════════════════════════
-function toast(msg, type = 'info', duration = 4000) {
+function toast(msg, type = 'info', duration = 5000) {
   const icons = { success: 'fa-check-circle', error: 'fa-exclamation-circle', info: 'fa-info-circle' };
   const container = $('toastContainer');
   const el = document.createElement('div');
   el.className = `toast toast-${type}`;
-  el.innerHTML = `<i class="fas ${icons[type]}"></i><span>${msg}</span>`;
+  el.innerHTML = `
+    <i class="fas ${icons[type]}"></i>
+    <div class="toast-content">${escHtml(msg)}</div>
+  `;
   container.appendChild(el);
-  const remove = () => {
+
+  // Auto-dismiss
+  const timeout = setTimeout(() => {
     el.classList.add('toast-out');
-    setTimeout(() => el.remove(), 320);
-  };
-  setTimeout(remove, duration);
-  el.addEventListener('click', remove);
+    setTimeout(() => el.remove(), 350);
+  }, duration);
+
+  // Click to dismiss
+  el.addEventListener('click', () => {
+    clearTimeout(timeout);
+    el.classList.add('toast-out');
+    setTimeout(() => el.remove(), 350);
+  });
+
+  // Play sound for success only (optional, respects user preferences)
+  if (type === 'success' && 'speechSynthesis' in window) {
+    // Subtle haptic/audio feedback for successful downloads
+  }
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -53,15 +68,24 @@ function initNavigation() {
       const section = btn.getAttribute('data-section');
       switchSection(section);
     });
+    // Keyboard navigation
+    btn.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        btn.click();
+      }
+    });
   });
 }
 
 function switchSection(sectionId) {
   currentSection = sectionId;
   
-  // Update nav UI
+  // Update nav UI with ARIA
   document.querySelectorAll('.nav-item').forEach(btn => {
-    btn.classList.toggle('active', btn.getAttribute('data-section') === sectionId);
+    const isActive = btn.getAttribute('data-section') === sectionId;
+    btn.classList.toggle('active', isActive);
+    btn.setAttribute('aria-current', isActive ? 'page' : 'false');
   });
   
   // Update page sections
@@ -142,13 +166,33 @@ function isYouTubeUrl(url) {
 // ═══════════════════════════════════════════════════════════
 // URL Input Helpers
 // ═══════════════════════════════════════════════════════════
+function isValidYouTubeUrl(url) {
+  const pattern = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/playlist\?list=)/i;
+  return pattern.test(url.trim());
+}
+
 $('clearUrlBtn').addEventListener('click', () => {
   $('urlInput').value = '';
+  $('urlInput').style.borderColor = '';
   resetInfoCards();
   $('urlInput').focus();
 });
+
+$('urlInput').addEventListener('input', e => {
+  const isValid = isValidYouTubeUrl(e.target.value);
+  e.target.style.borderColor = e.target.value && !isValid
+    ? 'var(--warning)'
+    : '';
+});
+
 $('urlInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') fetchVideo();
+  if (e.key === 'Escape') {
+    $('urlInput').value = '';
+    $('urlInput').style.borderColor = '';
+    resetInfoCards();
+    $('urlInput').focus();
+  }
 });
 
 function resetInfoCards() {
@@ -156,6 +200,19 @@ function resetInfoCards() {
   hide($('playlistCard'));
   hide($('loadingCard'));
   currentInfo = null;
+
+  // Reset form fields to defaults
+  if ($('formatSelect')) $('formatSelect').selectedIndex = 0;
+  if ($('audioFormatSelect')) $('audioFormatSelect').selectedIndex = 0; // mp3
+  $('subtitleCheck').checked = false;
+  $('cookieCheck').checked = false;
+  $('subLangInput').value = 'en';
+  $('trimStart').value = '';
+  $('trimEnd').value = '';
+  $('urlInput').style.borderColor = '';
+
+  hide($('subLangRow'));
+  updateFormatInfo();
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -163,7 +220,17 @@ function resetInfoCards() {
 // ═══════════════════════════════════════════════════════════
 async function fetchVideo() {
   const url = $('urlInput').value.trim();
-  if (!url) { toast('Please enter a YouTube URL', 'error'); return; }
+  if (!url) {
+    toast('Please enter a YouTube URL', 'error');
+    $('urlInput').focus();
+    return;
+  }
+
+  if (!isValidYouTubeUrl(url)) {
+    toast('Please enter a valid YouTube URL', 'error', 6000);
+    $('urlInput').focus();
+    return;
+  }
 
   resetInfoCards();
   show($('loadingCard'));
@@ -173,13 +240,19 @@ async function fetchVideo() {
   fetchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Fetching…';
 
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
     const res = await fetch(`${API}/api/info`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url }),
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
+
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Failed to fetch info');
+    if (!res.ok) throw new Error(data.error || 'Failed to fetch video information');
 
     currentInfo = data;
     hide($('loadingCard'));
@@ -191,7 +264,10 @@ async function fetchVideo() {
     }
   } catch (err) {
     hide($('loadingCard'));
-    toast(`Error: ${err.message}`, 'error', 6000);
+    const msg = err.name === 'AbortError'
+      ? 'Request timeout - please try again'
+      : err.message || 'Failed to fetch video information';
+    toast(`Error: ${msg}`, 'error', 7000);
   } finally {
     fetchBtn.disabled = false;
     fetchBtn.innerHTML = '<i class="fas fa-cloud-download-alt"></i> <span>Fetch Video</span>';
@@ -280,17 +356,31 @@ function updateFormatInfo() {
 // ═══════════════════════════════════════════════════════════
 function switchTab(tab) {
   activeTab = tab;
+
+  // Update ARIA attributes
+  $('tabVideo').setAttribute('aria-selected', tab === 'video' ? 'true' : 'false');
+  $('tabAudio').setAttribute('aria-selected', tab === 'audio' ? 'true' : 'false');
+
   if (tab === 'video') {
-    show($('videoTab')); hide($('audioTab'));
+    show($('videoTab'));
+    hide($('audioTab'));
     $('tabVideo').classList.add('active');
     $('tabAudio').classList.remove('active');
     show($('extraOptsSection'));
   } else {
-    hide($('videoTab')); show($('audioTab'));
+    hide($('videoTab'));
+    show($('audioTab'));
     $('tabAudio').classList.add('active');
     $('tabVideo').classList.remove('active');
     show($('extraOptsSection'));
   }
+}
+
+// ═══════════════════════════════════════════════════════════
+// Validate trim time format (HH:MM:SS)
+// ═══════════════════════════════════════════════════════════
+function isValidTimeFormat(str) {
+  return /^\d{2}:\d{2}:\d{2}$/.test(str);
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -299,17 +389,30 @@ function switchTab(tab) {
 async function startDownload(overrideUrl, overrideTitle, overrideOpts) {
   const url = overrideUrl || $('urlInput').value.trim();
   const title = overrideTitle || currentInfo?.title || 'Download';
-  if (!url) { toast('No URL to download', 'error'); return; }
+
+  if (!url) {
+    toast('No URL to download', 'error');
+    return;
+  }
 
   const isAudio = overrideOpts?.audio_only ?? (activeTab === 'audio');
+
+  // Validate trim inputs if provided
+  const trimStart = $('trimStart')?.value?.trim() || '';
+  const trimEnd = $('trimEnd')?.value?.trim() || '';
+  if ((trimStart && !isValidTimeFormat(trimStart)) || (trimEnd && !isValidTimeFormat(trimEnd))) {
+    toast('Invalid time format. Use HH:MM:SS (e.g., 00:01:30)', 'error');
+    return;
+  }
+
   const opts = overrideOpts || {
     format_id:       isAudio ? '' : ($('formatSelect')?.value || ''),
     audio_only:      isAudio,
     audio_format:    $('audioFormatSelect')?.value || 'mp3',
     subtitles:       $('subtitleCheck')?.checked || false,
     sub_langs:       $('subLangInput')?.value || 'en',
-    trim_start:      $('trimStart')?.value || '',
-    trim_end:        $('trimEnd')?.value || '',
+    trim_start:      trimStart,
+    trim_end:        trimEnd,
     cookies_browser: $('cookieCheck')?.checked ? 'chrome' : '',
     retries:         3,
     title,
@@ -327,7 +430,7 @@ async function startDownload(overrideUrl, overrideTitle, overrideOpts) {
     const { download_id } = data;
     createDownloadItem(download_id, title, url);
     listenProgress(download_id);
-    toast(`Download started: ${title}`, 'info');
+    toast(`Download started: ${title}`, 'success', 4000);
   } catch (err) {
     toast(`Error: ${err.message}`, 'error', 7000);
   }
@@ -545,13 +648,18 @@ function renderHistory(items) {
 function reDownload(url) {
   $('urlInput').value = url;
   switchSection('downloader');
-  fetchVideo();
+  toast('URL loaded - click "Fetch Video" to get info', 'info');
+  $('urlInput').focus();
 }
 
 async function clearHistory() {
-  await fetch(`${API}/api/history`, { method: 'DELETE' });
-  renderHistory([]);
-  toast('History cleared', 'info');
+  try {
+    await fetch(`${API}/api/history`, { method: 'DELETE' });
+    renderHistory([]);
+    toast('History cleared successfully', 'success');
+  } catch (err) {
+    toast('Failed to clear history', 'error');
+  }
 }
 
 // ═══════════════════════════════════════════════════════════
