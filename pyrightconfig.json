@@ -1,9 +1,11 @@
 {
+  "executionEnvironments": [
+    {
+      "root": "backend",
+      "extraPaths": ["."]
+    }
+  ],
   "pythonVersion": "3.8",
   "pythonPlatform": "Windows",
-  "include": ["backend"],
-  "extraPaths": ["backend"],
-  "typeCheckingMode": "basic",
-  "reportMissingImports": "none",
-  "reportMissingModuleSource": "none"
+  "typeCheckingMode": "basic"
 }
