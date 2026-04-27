@@ -6,7 +6,7 @@ import re
 import time
 import json
 import subprocess
-from typing import Any, Optional, Callable
+from typing import Any, Optional, Callable, Dict
 
 import yt_dlp  # type: ignore[import]
 
@@ -57,9 +57,9 @@ def _safe_filesize(fmt):
 # Fetch video / playlist info
 # ---------------------------------------------------------------------------
 
-def fetch_info(url: str, cookies_from_browser: Optional[str] = None) -> dict:
+def fetch_info(url: str, cookies_from_browser: Optional[str] = None) -> Dict[str, Any]:
     """Return rich metadata dict for a URL (video or playlist)."""
-    ydl_opts: dict[str, Any] = {
+    ydl_opts: Dict[str, Any] = {
         'quiet': True,
         'no_warnings': True,
         'skip_download': True,
@@ -71,14 +71,14 @@ def fetch_info(url: str, cookies_from_browser: Optional[str] = None) -> dict:
         ydl_opts['cookiesfrombrowser'] = [cookies_from_browser]
 
     try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:  # type: ignore[arg-type]
             info = ydl.extract_info(url, download=False)
     except Exception as e:
         # Fallback for cookie database lock
         if cookies_from_browser and ("Could not copy Chrome cookie database" in str(e) or "database is locked" in str(e)):
             print(f"Cookie fallback: {e}. Retrying without cookies...")
             ydl_opts.pop('cookiesfrombrowser', None)
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:  # type: ignore[arg-type]
                 info = ydl.extract_info(url, download=False)
         else:
             raise e
@@ -89,20 +89,20 @@ def fetch_info(url: str, cookies_from_browser: Optional[str] = None) -> dict:
         entries = []
         for e in (info.get('entries') or []):
             if e:
-                entries.append(_extract_video_meta(e))
+                entries.append(_extract_video_meta(e))  # type: ignore[arg-type]
         return {
             'type': 'playlist',
             'title': info.get('title', 'Playlist'),
             'count': len(entries),
             'entries': entries,
-        }
+        }  # type: ignore[return-value]
     else:
-        meta = _extract_video_meta(info)
+        meta = _extract_video_meta(info)  # type: ignore[arg-type]
         meta['type'] = 'video'
         return meta
 
 
-def _extract_video_meta(info: dict) -> dict:
+def _extract_video_meta(info: Dict[str, Any]) -> Dict[str, Any]:
     """Pull key fields + format list from a single video info dict."""
     formats_raw = info.get('formats', [])
 
@@ -198,10 +198,10 @@ def _extract_video_meta(info: dict) -> dict:
 def start_download(
     url: str,
     download_id: str,
-    options: dict,
+    options: Dict[str, Any],
     progress_callback: Callable,
     cancel_check: Callable,
-) -> dict:
+) -> Dict[str, Any]:
     """
     Run yt-dlp download. Calls progress_callback(data_dict) frequently.
     Returns result dict with 'status', 'filename', 'error'.
@@ -242,7 +242,14 @@ def start_download(
     return result
 
 
-def _run_download(url, download_id, options, progress_callback, cancel_check, attempt=1):
+def _run_download(
+    url: str,
+    download_id: str,
+    options: Dict[str, Any],
+    progress_callback: Callable,
+    cancel_check: Callable,
+    attempt: int = 1,
+) -> Dict[str, Any]:
     audio_only = options.get('audio_only', False)
     audio_format = options.get('audio_format', 'mp3')
     format_id = options.get('format_id', '')
@@ -284,7 +291,7 @@ def _run_download(url, download_id, options, progress_callback, cancel_check, at
             sections.append(f'*{start}-{trim_end}')
         else:
             sections.append(f'*{start}-inf')
-        downloader_opts['download_ranges'] = yt_dlp.utils.download_range_func(None, sections)
+        downloader_opts['download_ranges'] = yt_dlp.utils.download_range_func(None, sections)  # type: ignore[attr-defined]
         downloader_opts['force_keyframes_at_cuts'] = True
 
     # Format selection
@@ -297,7 +304,7 @@ def _run_download(url, download_id, options, progress_callback, cancel_check, at
 
     def _progress_hook(d):
         if cancel_check():
-            raise yt_dlp.utils.DownloadError('Cancelled by user')
+            raise yt_dlp.utils.DownloadError('Cancelled by user')  # type: ignore[attr-defined]
         status = d.get('status', '')
         if status == 'downloading':
             # Try to calculate percentage from bytes first (more reliable)
@@ -337,7 +344,7 @@ def _run_download(url, download_id, options, progress_callback, cancel_check, at
                 'filename': d.get('filename', ''),
             })
 
-    ydl_opts: dict[str, Any] = {
+    ydl_opts: Dict[str, Any] = {
         'format': fmt,
         'outtmpl': out_tmpl,
         'progress_hooks': [_progress_hook],
@@ -363,7 +370,7 @@ def _run_download(url, download_id, options, progress_callback, cancel_check, at
 
     last_filename = ''
     try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:  # type: ignore[arg-type]
             info = ydl.extract_info(url, download=True)
             last_filename = ydl.prepare_filename(info) if info else ''
             # Ensure extension is mkv if bestvideo+bestaudio was used
@@ -376,7 +383,7 @@ def _run_download(url, download_id, options, progress_callback, cancel_check, at
             print(f"Cookie fallback during download: {e}. Retrying without cookies...")
             ydl_opts.pop('cookiesfrombrowser', None)
             try:
-                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:  # type: ignore[arg-type]
                     info = ydl.extract_info(url, download=True)
                     last_filename = ydl.prepare_filename(info) if info else ''
                     if not audio_only and last_filename:

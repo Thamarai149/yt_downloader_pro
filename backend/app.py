@@ -114,12 +114,13 @@ def api_download():
         )
 
         final_status = result.get('status', 'error')
+        prog = queue_manager.get_progress(download_id)
         queue_manager.update_progress(
             download_id,
             status=final_status,
             filename=result.get('filename', ''),
             error=result.get('error', ''),
-            percent=100 if final_status == 'done' else queue_manager.get_progress(download_id).get('percent', 0),
+            percent=100 if final_status == 'done' else (prog.get('percent', 0) if prog else 0),
         )
         log.info(f'[{download_id}] Finished: {final_status}')
 
